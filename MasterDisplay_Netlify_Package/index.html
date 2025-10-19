@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Master Display: GDR Tools</title>
+  <meta name="author" content="Circolo dei Bardi APS" />
+  <meta name="theme-color" content="#2a0810" />
+  <!-- Favicon: inline SVG shield + d20 -->
+  <link rel="icon" type="image/svg+xml" href='data:image/svg+xml;utf8,
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+    <defs>
+      <linearGradient id="g" x1="0" x2="0" y1="0" y2="1">
+        <stop stop-color="#f0d58a" offset="0"/>
+        <stop stop-color="#b8842e" offset="1"/>
+      </linearGradient>
+    </defs>
+    <rect width="64" height="64" rx="12" fill="#1a0e14"/>
+    <path d="M32 6l16 6v16c0 10-7 18-16 22C23 46 16 38 16 28V12l16-6z" fill="#2b131d" stroke="url(#g)" stroke-width="2"/>
+    <g fill="none" stroke="url(#g)" stroke-width="2" stroke-linejoin="round">
+      <polygon points="32,16 44,22 44,36 32,42 20,36 20,22"/>
+      <path d="M32,16 32,42M20,22 44,36M44,22 20,36"/>
+    </g>
+    <path d="M32 26l3 3-3 3-3-3 3-3z" fill="#f0d58a"/>
+  </svg>'>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;800;900&family=Inter:wght@500;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --ink:#f6e9e9;
+      --ink-2:#d9bcbc;
+      --bg1:#2a0810;        /* deep bordeaux */
+      --bg2:#520c1a;        /* rich bordeaux */
+      --bg3:#0b0b0d;        /* near black */
+      --paper:#3b0f18;      /* panel */
+      --paper-2:#4a1320;
+      --gold:#d3b26a;
+      --copper:#b37e3a;
+      --accent:#f2c66b;
+      --danger:#d65a5a;
+      --muted:#d6c9c9;
+      --ring:0 0 0 2px rgba(210,170,90,.35);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;color:var(--ink);
+      font:14px/1.4 Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial;
+      background:
+        radial-gradient(1200px 900px at 80% -10%, rgba(0,0,0,.55), transparent 60%),
+        radial-gradient(900px 700px at 10% 110%, rgba(0,0,0,.45), transparent 60%),
+        linear-gradient(180deg, var(--bg2), var(--bg1) 50%, var(--bg3));
+      background-attachment: fixed;
+    }
+    .wrap{max-width:1280px;margin:0 auto;padding:14px}
+    header.appbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:6px 0 10px;flex-wrap:wrap}
+    .brand{display:flex;align-items:center;gap:12px}
+    .app-icon{ width:34px; height:34px; flex:0 0 auto }
+    .title{font-family:"Cinzel",serif;font-weight:900;letter-spacing:.3px;font-size:22px;color:var(--ink);display:flex;align-items:center;gap:10px}
+    .subtitle{color:var(--ink-2);font-weight:700;font-size:12px;margin-top:2px;opacity:.9}
+    .tabs{display:flex;gap:6px;flex-wrap:wrap}
+    .tabbtn{
+      appearance:none;border:1px solid rgba(210,170,90,.35);
+      background:linear-gradient(180deg,rgba(255,255,255,.06),transparent), var(--paper);
+      color:var(--ink);padding:7px 10px;border-radius:12px;cursor:pointer;font-weight:900;font-size:12px;
+      box-shadow: 0 2px 0 rgba(0,0,0,.25);
+    }
+    .tabbtn[aria-selected="true"]{
+      background:linear-gradient(180deg,rgba(255,255,255,.1),transparent), var(--paper-2);
+      border-color:var(--accent); color:#fff2d6; box-shadow: 0 8px 24px rgba(0,0,0,.35),0 0 0 2px rgba(242,198,107,.22);
+    }
+    .panels{
+      position:relative;border:1px solid rgba(210,170,90,.28);border-radius:14px;overflow:hidden;
+      background:linear-gradient(180deg,rgba(255,255,255,.03),transparent), #300a12;
+      box-shadow:0 14px 36px rgba(0,0,0,.4), inset 0 0 60px rgba(0,0,0,.25);
+    }
+    .panel{display:none}.panel.active{display:block}
+    .bar{
+      display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 10px;
+      border-bottom:1px solid rgba(210,170,90,.28);background:rgba(0,0,0,.25);flex-wrap:wrap
+    }
+    .tip{color:var(--muted);font-size:12px}
+    .section{padding:10px}
+
+    .btn{appearance:none;border:1px solid rgba(210,170,90,.28);background:#501222;color:#ffeedd;padding:7px 9px;border-radius:10px;cursor:pointer;font-weight:900;font-size:12px}
+    .btn.primary{background:#6a182e;border-color:var(--accent)}
+    .btn.ghost{background:transparent}
+    .btn:focus{outline:none;box-shadow:var(--ring)}
+
+    /* Control groups */
+    .grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:.5rem}
+    .group{background:rgba(0,0,0,.25);border:1px solid rgba(210,170,90,.25);border-radius:10px;padding:.45rem .55rem;display:grid;gap:.35rem}
+    .group h3{margin:0;font:700 .95rem "Cinzel",serif;color:#f3dca8}
+    .row{display:flex;gap:.4rem;align-items:center;flex-wrap:wrap}
+    input[type="text"],input[type="number"],input[type="color"],select{
+      background:#2b0b13;border:1px solid rgba(210,170,90,.25);color:#fde6e6;border-radius:8px;padding:.35rem .5rem;font-size:12px
+    }
+    input[type="file"]{color:#e8cfcf;font-size:12px}
+    #board{display:block;width:100%;height:76vh;background:#18070b;border-top:1px solid rgba(210,170,90,.28)}
+    .token-badges{display:flex;gap:.3rem;flex-wrap:wrap}
+    .badge{display:inline-flex;align-items:center;gap:.35rem;padding:.22rem .42rem;border-radius:999px;background:#3d0f1b;border:1px solid rgba(210,170,90,.25);font-weight:800;cursor:pointer;font-size:11px}
+    .badge .dot{width:9px;height:9px;border-radius:50%}
+    .badge.active{outline:2px solid var(--accent)}
+    .legend{background:#2a0b12;border:1px dashed rgba(210,170,90,.3);border-radius:10px;padding:.4rem .55rem;color:#e8cfcf}
+
+    /* Dice & Tools */
+    .grid{display:grid;grid-template-columns:repeat(12,1fr);gap:12px}
+    .col-12{grid-column:span 12}.col-6{grid-column:span 6}@media(max-width:900px){.col-6{grid-column:span 12}}
+    .panel2{background:rgba(0,0,0,.25);border:1px solid rgba(210,170,90,.25);border-radius:12px;box-shadow: inset 0 0 40px rgba(0,0,0,.25);padding:12px;position:relative}
+    .dicebar{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;margin-top:6px}
+    .diebtn{display:inline-flex;align-items:center;justify-content:center;background:#2e0b14;color:#ffeedd;border:1px solid rgba(210,170,90,.25);border-radius:10px;padding:8px 0;font-weight:900;cursor:pointer;user-select:none;position:relative}
+    .diebtn small{color:#e8cfcf;font-weight:700;font-size:10px;position:absolute;bottom:5px}
+    .inputs{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+    .inputs input,.inputs select{width:100%;background:#2b0b13;color:#ffeedd;border:1px solid rgba(210,170,90,.25);border-radius:10px;padding:8px 8px;font-weight:700;font-size:12px}
+    .history{max-height:220px;overflow:auto;padding-right:4px;margin-top:8px;border-top:1px dashed rgba(210,170,90,.25);padding-top:8px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+    .line{display:flex;gap:8px;align-items:flex-start;padding:5px 0;border-bottom:1px dashed rgba(210,170,90,.25)}
+    .line:last-child{border-bottom:none} .sum{margin-left:auto;font-weight:900}
+    .rowItem{display:grid;grid-template-columns:24px 1.3fr .7fr .7fr .7fr auto;gap:8px;align-items:center;background:#2e0b14;border:1px solid rgba(210,170,90,.25);border-radius:12px;padding:6px 8px;margin:6px 0}
+    .mini{font-size:11px;color:#e8cfcf}
+    .log{max-height:220px; overflow:auto; border:1px dashed rgba(210,170,90,.25); border-radius:12px; padding:8px; background:#20070d}
+    .footer{color:#e8cfcf;text-align:center;margin:12px 0 6px;font-size:11px}
+    .credit{font-size:11px;color:#e8cfcf;margin-top:8px}
+    .audio-bar{display:flex;gap:8px;align-items:center}
+    .audio-btn{cursor:pointer;border:1px solid rgba(210,170,90,.35);padding:6px 10px;border-radius:999px;background:#501222;font-weight:900;color:#ffeedd}
+
+    /* Floating music controls */
+    #audioControls{position:fixed; right:12px; bottom:12px; background:#2a0b12cc; border:1px solid rgba(210,170,90,.28); padding:8px 10px; border-radius:12px; backdrop-filter: blur(4px); display:flex; gap:8px; align-items:center; z-index:9999}
+    #bgmToggle{cursor:pointer;border:1px solid rgba(210,170,90,.35);padding:6px 10px;border-radius:999px;background:#501222;font-weight:900;color:#ffeedd}
+    #bgmVol{vertical-align:middle}
+  </style>
+  <link rel="manifest" href="manifest.webmanifest">
+</head>
+<body>
+  <div class="wrap">
+    <header class="appbar">
+      <div class="brand">
+        <!-- UI Icon (shield + d20) -->
+        <svg class="app-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" aria-hidden="true">
+          <defs>
+            <linearGradient id="g-ui" x1="0" x2="0" y1="0" y2="1">
+              <stop stop-color="#f0d58a" offset="0"/>
+              <stop stop-color="#b8842e" offset="1"/>
+            </linearGradient>
+          </defs>
+          <rect width="64" height="64" rx="12" fill="#1a0e14"/>
+          <path d="M32 6l16 6v16c0 10-7 18-16 22C23 46 16 38 16 28V12l16-6z" fill="#2b131d" stroke="url(#g-ui)" stroke-width="2"/>
+          <g fill="none" stroke="url(#g-ui)" stroke-width="2" stroke-linejoin="round">
+            <polygon points="32,16 44,22 44,36 32,42 20,36 20,22"/>
+            <path d="M32,16 32,42M20,22 44,36M44,22 20,36"/>
+          </g>
+          <path d="M32 26l3 3-3 3-3-3 3-3z" fill="#f0d58a"/>
+        </svg>
+        <div>
+          <div class="title">Master Display: GDR Tools</div>
+          <div class="subtitle">Mappa tattica • Dadi • Iniziativa</div></div>
+      </div>
+      <nav class="tabs" role="tablist">
+        <button class="tabbtn" aria-selected="true" data-tab="map">Mappa & Token</button>
+        <button class="tabbtn" aria-selected="false" data-tab="dice">Dice Roller</button>
+        <button class="tabbtn" aria-selected="false" data-tab="tools">Iniziativa • Stati • Log</button>
+      </nav>
+    </header>
+
+    <section class="panels">
+      <div class="bar">
+        <div class="tip">Backup: <button class="btn" id="saveAll">Salva JSON</button> <input id="loadAll" type="file" accept="application/json" title="Carica JSON" /></div>
+        <div class="tip">Audio: usa il pulsante in basso a destra (play/pausa + volume). File: <code>music/masterdisplaymusic.mp3</code></div></div>
+
+      <!-- MAP -->
+      <div class="panel active" data-panel="map">
+        <div class="section">
+          <div class="grid2">
+            <div class="group">
+              <h3>Online</h3>
+              <div class="row">
+                <label>Room</label>
+                <input id="roomId" type="text" placeholder="tavolo-1" style="width:9rem">
+                <button class="btn" id="joinRoom">Entra</button></div>
+              <div class="row">
+                <label class="mini"><input id="isMaster" type="checkbox"> Sono il Master</label>
+                <span class="mini">Stato: <b id="modeInfo">offline</b></span></div>
+            </div>
+            <div class="group">
+              <h3>Griglia</h3>
+              <div class="row">
+                <label for="cellSize">Dim</label>
+                <input id="cellSize" type="range" min="20" max="96" step="1" value="56">
+                <span id="cellSizeVal" class="mini">56 px</span></div>
+              <div class="row">
+                <label class="mini"><input id="showGrid" type="checkbox" checked> Griglia</label>
+                <label class="mini"><input id="snapMove" type="checkbox" checked> Snap</label></div>
+            </div>
+            <div class="group">
+              <h3>Mappa</h3>
+              <div class="row">
+                <input id="mapFile" type="file" accept="image/*">
+                <button class="btn" id="clearMap">Rimuovi</button></div>
+              <div class="row">
+                <label>Adatta</label>
+                <select id="mapFit">
+                  <option value="cover">Copri</option>
+                  <option value="contain">Contieni</option>
+                  <option value="stretch">Stira</option>
+                </select>
+                <button class="btn" id="centerView">Centra</button></div>
+            </div>
+            <div class="group">
+              <h3>Token</h3>
+              <div id="tokenBadges" class="token-badges"></div>
+              <div class="row">
+                <label class="mini"><input id="noOverlap" type="checkbox" checked> No overlap</label></div>
+            </div>
+            <div class="group">
+              <h3>Nuovi token</h3>
+              <div class="row">
+                <label>Nome</label><input id="newName" type="text" placeholder="E1" style="width:6rem;">
+                <label>Colore</label><input id="newColor" type="color" value="#cc3333">
+                <label class="mini"><input id="isEnemy" type="checkbox"> Avv.</label>
+                <button class="btn" id="addToken">Aggiungi</button>
+                <button class="btn" id="removeSel">Rimuovi sel.</button></div>
+              <div class="legend" id="placeHint" style="display:none">Posizionamento attivo: clicca sulla griglia per piazzare.</div></div>
+          </div></div>
+        <canvas id="board" aria-label="Mappa con griglia e token"></canvas>
+        <div class="section">
+          <div class="legend">
+            <b>Controlli</b> — clic token per selezionarlo; clic cella per muoverlo; tasti frecce (Shift = ×5); 1–4 selezionano A–D.
+          </div></div>
+      </div>
+
+      <!-- DICE -->
+      <div class="panel" data-panel="dice">
+        <div class="bar">
+          <div class="tip">RNG crittografico, preset, cronologia per personaggio. Usa il bottone per aggiungere personaggi.</div>
+          <div><button class="btn primary" id="diceAddChar">+ Personaggio</button></div></div>
+        <div class="section"><div id="diceApp"></div></div></div>
+
+      <!-- TOOLS -->
+      <div class="panel" data-panel="tools">
+        <div class="bar"><div class="tip">Iniziativa con <b>stati</b>, <b>registro eventi</b>, note e timer.</div></div>
+        <div class="section">
+          <div class="row" style="gap:6px;margin-bottom:6px;flex-wrap:wrap">
+            <input id="t_name" placeholder="Nome" style="width:10rem">
+            <input id="t_init" type="number" placeholder="Init" style="width:6rem">
+            <input id="t_mod" type="number" value="0" title="Mod init" style="width:5rem">
+            <input id="t_hp" type="number" placeholder="HP" style="width:5rem">
+            <input id="t_ac" type="number" placeholder="CA" style="width:5rem">
+            <label class="mini"><input type="checkbox" id="t_ispc"> PG</label>
+            <button class="btn primary" id="t_add">+ Aggiungi</button>
+            <button class="btn" id="t_sort">Ordina</button>
+            <button class="btn" id="t_start">Avvia</button>
+            <button class="btn" id="t_prev">←</button>
+            <button class="btn primary" id="t_next">→</button>
+            <button class="btn" id="t_end">Fine</button>
+            <button class="btn" id="t_clear">Svuota</button>
+            <span class="mini" style="margin-left:auto">Turno: <b id="t_turn">—</b> • Round: <b id="t_round">—</b></span></div>
+          <div id="t_list"></div>
+
+          <div class="grid" style="margin-top:10px">
+            <div class="col-6">
+              <div class="panel2">
+                <h3 style="margin:0 0 6px">Timer Round</h3>
+                <div class="row">
+                  <input id="mins" type="number" min="0" value="1" style="width:5rem"> :
+                  <input id="secs" type="number" min="0" max="59" value="0" style="width:5rem">
+                  <button class="btn primary" id="tstart">Avvia</button>
+                  <button class="btn" id="tpause">Pausa</button>
+                  <button class="btn" id="treset">Reset</button>
+                  <span class="badge mini">Tempo: <b id="tleft">01:00</b></span></div>
+              </div></div>
+            <div class="col-6">
+              <div class="panel2">
+                <h3 style="margin:0 0 6px">Note</h3>
+                <textarea id="notes" placeholder="Appunti..." style="width:100%;min-height:150px;background:#2b0b13;border:1px solid rgba(210,170,90,.25);color:#ffffff;border-radius:10px;padding:8px"></textarea>
+                <h3 style="margin:10px 0 6px">Registro eventi</h3>
+                <div id="t_log" class="log"></div></div>
+            </div></div>
+        </div></div>
+    </section>
+
+    <div class="footer">© <span id="year"></span> — <span class="credit">Creata da <b>Circolo dei Bardi APS</b></span></div></div>
+
+<!-- Floating audio controls + audio element (relative file) -->
+<audio id="bgm" src="music/masterdisplaymusic.mp3" loop preload="auto"></audio>
+<div id="audioControls">
+  <button id="bgmToggle">▶︎ Musica</button>
+  <label class="mini">Vol <input id="bgmVol" type="range" min="0" max="1" step="0.01" value="0.4"></label></div>
+
+<script>
+(function(){
+  // Year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Tabs
+  const tabs = document.querySelectorAll('.tabbtn');
+  const panels = document.querySelectorAll('.panel');
+  function showTab(key){
+    panels.forEach(p=>p.classList.toggle('active', p.dataset.panel===key));
+    tabs.forEach(b=> b.setAttribute('aria-selected', b.dataset.tab===key));
+  }
+  tabs.forEach(b=> b.addEventListener('click', ()=> showTab(b.dataset.tab)));
+  showTab('map');
+
+  // AUDIO ELEMENT (uses external file music/masterdisplaymusic.mp3)
+  const audio = document.getElementById('bgm');
+  const btn = document.getElementById('bgmToggle');
+  const vol = document.getElementById('bgmVol');
+  audio.volume = parseFloat(vol.value||"0.4");
+  async function tryPlay(){
+    try { await audio.play(); btn.textContent = '⏸︎ Musica'; }
+    catch(e){ btn.textContent = '▶︎ Musica'; }
+  }
+  window.addEventListener('load', tryPlay, { once:true });
+  ['click','pointerdown','keydown'].forEach(ev=>{
+    document.addEventListener(ev, ()=>{ if(audio.paused) tryPlay(); }, { once:true });
+  });
+  btn.addEventListener('click', ()=>{
+    if(audio.paused){ audio.play(); btn.textContent='⏸︎ Musica'; }
+    else { audio.pause(); btn.textContent='▶︎ Musica'; }
+  });
+  vol.addEventListener('input', ()=>{ audio.volume = parseFloat(vol.value||"0.4"); });
+
+  // SOCKET.IO (optional)
+  const ioAvailable = typeof window.io !== 'undefined';
+  const socket = ioAvailable ? window.io() : { emit(){}, on(){}, off(){}, _offline:true };
+  const modeInfo = document.getElementById('modeInfo');
+  if(modeInfo) modeInfo.textContent = ioAvailable ? "online disponibile" : "offline";
+
+  // MAP
+  const roomInput = document.getElementById('roomId');
+  const joinBtn = document.getElementById('joinRoom');
+  const isMasterChk = document.getElementById('isMaster');
+  let currentRoom = 'tavolo-1';
+  function joinRoom(roomId){ currentRoom = (roomId||'tavolo-1'); if(ioAvailable) socket.emit('join', { roomId: currentRoom }); }
+  if(joinBtn) joinBtn.addEventListener('click', ()=> joinRoom(roomInput.value.trim()||'tavolo-1'));
+
+  const canvas = document.getElementById('board'); const ctx2 = canvas.getContext('2d');
+  const cellSizeInput = document.getElementById('cellSize'); const cellSizeVal = document.getElementById('cellSizeVal');const showGridChk = document.getElementById('showGrid'); const snapMoveChk = document.getElementById('snapMove');
+  const mapFileInput = document.getElementById('mapFile'); const mapFitSel = document.getElementById('mapFit');
+  const clearMapBtn = document.getElementById('clearMap'); const noOverlapChk = document.getElementById('noOverlap');
+  const tokenBadges = document.getElementById('tokenBadges'); const placeHint = document.getElementById('placeHint');
+  const addBtn = document.getElementById('addToken'); const remBtn = document.getElementById('removeSel');
+  const newNameInput = document.getElementById('newName'); const newColorInput = document.getElementById('newColor'); const isEnemyChk = document.getElementById('isEnemy');
+  const centerViewBtn = document.getElementById('centerView');
+
+  let state = {
+    cellSize: parseInt(cellSizeInput.value,10),
+    showGrid: showGridChk.checked, snapMove: snapMoveChk.checked, noOverlap: noOverlapChk.checked,
+    mapFit: mapFitSel.value, mapDataUrl: null,
+    tokens: [
+      { id: 'A', name: 'A', color: '#d65a5a', x: 2, y: 2, enemy:false },
+      { id: 'B', name: 'B', color: '#e7c06e', x: 4, y: 2, enemy:false },
+      { id: 'C', name: 'C', color: '#6bbf7a', x: 2, y: 4, enemy:false },
+      { id: 'D', name: 'D', color: '#6ab3e7', x: 4, y: 4, enemy:false }
+    ],
+    selectedId: 'A', _pendingNew: null
+  };
+  let bgImage = null;
+
+  function fitCanvas(){ const dpr = window.devicePixelRatio||1; const rect = canvas.getBoundingClientRect(); canvas.width = Math.floor(rect.width*dpr); canvas.height = Math.floor((window.innerHeight*0.76)*dpr); ctx2.setTransform(dpr,0,0,dpr,0,0); draw(); }
+  window.addEventListener('resize', fitCanvas); window.addEventListener('load', fitCanvas);
+
+  function draw(){
+    const w = canvas.clientWidth, h = canvas.clientHeight;
+    ctx2.clearRect(0,0,w,h);
+    if(bgImage) drawBackground(bgImage, state.mapFit);
+    if(state.showGrid) drawGrid(state.cellSize, w, h);
+    for(const t of state.tokens) drawToken(t);
+    if(state._pendingNew) drawGhost(state._pendingNew);
+  }
+  function drawGrid(cell,w,h){
+    ctx2.save(); ctx2.lineWidth=1; ctx2.strokeStyle='rgba(255,230,220,.15)';
+    for(let x=0;x<=w;x+=cell){ ctx2.beginPath(); ctx2.moveTo(x+.5,0); ctx2.lineTo(x+.5,h); ctx2.stroke(); }
+    for(let y=0;y<=h;y+=cell){ ctx2.beginPath(); ctx2.moveTo(0,y+.5); ctx2.lineTo(w,y+.5); ctx2.stroke(); }
+    ctx2.strokeStyle='rgba(255,230,220,.28)';
+    for(let x=0;x<=w;x+=cell*5){ ctx2.beginPath(); ctx2.moveTo(x+.5,0); ctx2.lineTo(x+.5,h); ctx2.stroke(); }
+    for(let y=0;y<=h;y+=cell*5){ ctx2.beginPath(); ctx2.moveTo(0,y+.5); ctx2.lineTo(w,y+.5); ctx2.stroke(); }
+    ctx2.restore();
+  }
+  function drawBackground(bg,fit){ const w=canvas.clientWidth,h=canvas.clientHeight,iw=bg.w,ih=bg.h; let dw=w,dh=h,dx=0,dy=0; if(fit==='stretch'){dw=w;dh=h}else if(fit==='contain'){const s=Math.min(w/iw,h/ih);dw=iw*s;dh=ih*s;dx=(w-dw)/2;dy=(h-dh)/2}else{const s=Math.max(w/iw,h/ih);dw=iw*s;dh=ih*s;dx=(w-dw)/2;dy=(h-dh)/2} ctx2.drawImage(bg.img,dx,dy,dw,dh); }
+  function drawToken(t){ const cx=t.x*state.cellSize+state.cellSize/2, cy=t.y*state.cellSize+state.cellSize/2, r=Math.max(9,state.cellSize*.36); if(t.id===state.selectedId){ ctx2.save(); ctx2.beginPath(); ctx2.arc(cx,cy,r+6,0,Math.PI*2); ctx2.fillStyle='rgba(242,198,107,.22)'; ctx2.fill(); ctx2.restore(); } ctx2.save(); ctx2.beginPath(); ctx2.arc(cx,cy,r,0,Math.PI*2); ctx2.fillStyle=t.color; ctx2.fill(); ctx2.lineWidth=2; ctx2.strokeStyle='rgba(0,0,0,.55)'; ctx2.stroke(); if(t.enemy){ ctx2.lineWidth=3; ctx2.strokeStyle='rgba(214,90,90,.9)'; ctx2.stroke(); } ctx2.restore(); ctx2.save(); ctx2.font=`800 ${Math.floor(r*.9)}px Inter, system-ui, sans-serif`; ctx2.textAlign='center'; ctx2.textBaseline='middle'; ctx2.fillStyle='#18070b'; ctx2.fillText((t.name||t.id).slice(0,3),cx,cy+1); ctx2.restore(); }
+  function drawGhost(tmp){ const cx=tmp.x*state.cellSize+state.cellSize/2, cy=tmp.y*state.cellSize+state.cellSize/2, r=Math.max(9,state.cellSize*.36); ctx2.save(); ctx2.beginPath(); ctx2.arc(cx,cy,r,0,Math.PI*2); ctx2.fillStyle=tmp.color; ctx2.globalAlpha=.28; ctx2.fill(); ctx2.lineWidth=2; ctx2.globalAlpha=.6; ctx2.strokeStyle='rgba(242,198,107,.8)'; ctx2.setLineDash([6,4]); ctx2.stroke(); ctx2.restore(); }
+  function screenToCell(x,y){ return { cx: Math.floor(x/state.cellSize), cy: Math.floor(y/state.cellSize) }; }
+  function tokenAtCell(cx,cy){ return state.tokens.find(t=>t.x===cx && t.y===cy); }
+  function tokenAtPoint(x,y){ for(const t of state.tokens){ const cx=t.x*state.cellSize+state.cellSize/2, cy=t.y*state.cellSize+state.cellSize/2, r=Math.max(9,state.cellSize*.36); const dx=x-cx,dy=y-cy; if(dx*dx+dy*dy<=r*r)return t; } return null; }
+  function clampMove(nx,ny){ const maxX=Math.floor((canvas.clientWidth-1)/state.cellSize); const maxY=Math.floor((canvas.clientHeight-1)/state.cellSize); return { x:Math.max(0,Math.min(nx,maxX)), y:Math.max(0,Math.min(ny,maxY)) }; }
+  function moveSelected(dx,dy){ const sel=state.tokens.find(t=>t.id===state.selectedId); if(!sel)return; let nx=sel.x+dx,ny=sel.y+dy; ({x:nx,y:ny}=clampMove(nx,ny)); if(state.noOverlap){ const occ=tokenAtCell(nx,ny); if(occ && occ.id!==sel.id) return; } sel.x=nx; sel.y=ny; draw(); maybeBroadcast(); }
+  function moveSelectedToCell(cx,cy){ const sel=state.tokens.find(t=>t.id===state.selectedId); if(!sel)return; ({x:cx,y:cy}=clampMove(cx,cy)); if(state.noOverlap){ const occ=tokenAtCell(cx,cy); if(occ && occ.id!==sel.id) return; } sel.x=cx; sel.y=cy; draw(); maybeBroadcast(); }
+  function nextId(base='E'){ const ids=new Set(state.tokens.map(t=>t.id)); let n=1,id=base; while(ids.has(id)){ id=base+(++n); } return id; }
+  function startPlacement(tok){ state._pendingNew=tok; placeHint.style.display='block'; draw(); }
+  function confirmPlacementAt(cx,cy){ const t=state._pendingNew; if(!t)return; ({x:cx,y:cy}=clampMove(cx,cy)); if(state.noOverlap && tokenAtCell(cx,cy)) return; t.x=cx; t.y=cy; state.tokens.push(t); state.selectedId=t.id; state._pendingNew=null; placeHint.style.display='none'; renderTokenBadges(); draw(); maybeBroadcast(); }
+  function renderTokenBadges(){ tokenBadges.innerHTML=''; for(const t of state.tokens){ const badge=document.createElement('div'); badge.className='badge'+(t.id===state.selectedId?' active':''); badge.title='Clic per selezionare. Doppio clic per rinominare (Master). Shift+Clic per colore (Master).'; const dot=document.createElement('span'); dot.className='dot'; dot.style.background=t.color; const label=document.createElement('span'); label.textContent=(t.enemy?'⚔ ':'')+(t.name||t.id); badge.appendChild(dot); badge.appendChild(label); badge.addEventListener('click',(e)=>{ if(e.shiftKey && isMasterChk.checked){ const nc=prompt('Colore token:', t.color); if(nc){ t.color=nc; draw(); renderTokenBadges(); maybeBroadcast(); } } else { state.selectedId=t.id; renderTokenBadges(); draw(); } }); badge.addEventListener('dblclick',()=>{ if(!isMasterChk.checked) return; const nn=prompt('Nome del token:', t.name||t.id); if(nn){ t.name=nn.slice(0,12); renderTokenBadges(); draw(); maybeBroadcast(); } }); tokenBadges.appendChild(badge); } }
+  function maybeBroadcast(){ if(ioAvailable && isMasterChk.checked){ socket.emit('update', { roomId: currentRoom, state }); } }
+  if(addBtn) addBtn.addEventListener('click', ()=>{ if(!isMasterChk.checked){ alert('Solo il Master può aggiungere token.'); return; } const nm=(newNameInput.value||'E1').trim(); const color=newColorInput.value||'#b35b3b'; const enemy=!!isEnemyChk.checked; const id=nextId((enemy?'X':(nm[0]||'E')).toUpperCase()); const t={id,name:nm.slice(0,12),color,x:0,y:0,enemy}; state.selectedId=id; startPlacement(t); });
+  if(remBtn) remBtn.addEventListener('click', ()=>{ if(!isMasterChk.checked){ alert('Solo il Master può rimuovere token.'); return; } const idx=state.tokens.findIndex(t=>t.id===state.selectedId); if(idx>-1){ state.tokens.splice(idx,1); state.selectedId=(state.tokens[0]&&state.tokens[0].id)||null; renderTokenBadges(); draw(); maybeBroadcast(); } });
+  if(cellSizeInput) cellSizeInput.addEventListener('input', () => {
+  state.cellSize = parseInt(cellSizeInput.value, 10);
+  cellSizeVal.textContent = `${state.cellSize} px`;draw(); maybeBroadcast();
+});
+  if(showGridChk) showGridChk.addEventListener('change', ()=>{ state.showGrid=showGridChk.checked; draw(); maybeBroadcast(); });
+  if(snapMoveChk) snapMoveChk.addEventListener('change', ()=>{ state.snapMove=snapMoveChk.checked; });
+  if(noOverlapChk) noOverlapChk.addEventListener('change', ()=>{ state.noOverlap=noOverlapChk.checked; });
+  if(mapFitSel) mapFitSel.addEventListener('change', ()=>{ state.mapFit=mapFitSel.value; draw(); maybeBroadcast(); });
+  if(clearMapBtn) clearMapBtn.addEventListener('click', ()=>{ bgImage=null; state.mapDataUrl=null; if(mapFileInput) mapFileInput.value=''; draw(); maybeBroadcast(); });
+  if(mapFileInput) mapFileInput.addEventListener('change', (e)=>{ const file=e.target.files&&e.target.files[0]; if(!file) return; const reader=new FileReader(); reader.onload=()=>{ state.mapDataUrl=reader.result; loadBgFromDataUrl(state.mapDataUrl, ()=>{ draw(); maybeBroadcast(); }); }; reader.readAsDataURL(file); });
+  function loadBgFromDataUrl(dataUrl, cb){ if(!dataUrl){ bgImage=null; cb&&cb(); return; } const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ bgImage={ img, w: img.naturalWidth, h: img.naturalHeight }; cb&&cb(); }; img.src=dataUrl; }
+  if(centerViewBtn) centerViewBtn.addEventListener('click', draw);
+  const canvasEl = document.getElementById('board');
+  canvasEl.addEventListener('mousemove',(e)=>{ if(!state._pendingNew) return; const r=canvasEl.getBoundingClientRect(); const x=(e.clientX-r.left), y=(e.clientY-r.top); const {cx,cy}=screenToCell(x,y); state._pendingNew.x=cx; state._pendingNew.y=cy; draw(); });
+  canvasEl.addEventListener('mousedown',(e)=>{ const r=canvasEl.getBoundingClientRect(); const x=(e.clientX-r.left), y=(e.clientY-r.top); if(state._pendingNew){ const {cx,cy}=screenToCell(x,y); confirmPlacementAt(cx,cy); return; } const hit=tokenAtPoint(x,y); if(hit){ state.selectedId=hit.id; renderTokenBadges(); draw(); return; } const {cx,cy}=screenToCell(x,y); moveSelectedToCell(cx,cy); });
+  window.addEventListener('keydown',(e)=>{ const mult=e.shiftKey?5:1; if(e.key==='Escape' && state._pendingNew){ state._pendingNew=null; placeHint.style.display='none'; draw(); return; } if(e.key==='Delete'||e.key==='Backspace'){ if(isMasterChk.checked) remBtn && remBtn.click(); } if(e.key==='ArrowUp'){e.preventDefault(); moveSelected(0,-1*mult);} if(e.key==='ArrowDown'){e.preventDefault(); moveSelected(0,1*mult);} if(e.key==='ArrowLeft'){e.preventDefault(); moveSelected(-1*mult,0);} if(e.key==='ArrowRight'){e.preventDefault(); moveSelected(1*mult,0);} if(e.key==='1') selectByIndex(0); if(e.key==='2') selectByIndex(1); if(e.key==='3') selectByIndex(2); if(e.key==='4') selectByIndex(3); });
+  function selectByIndex(i){ if(state.tokens[i]){ state.selectedId=state.tokens[i].id; renderTokenBadges(); draw(); } }
+  renderTokenBadges();
+
+  // DICE
+  const diceRoot = document.getElementById('diceApp');
+  function escapeHtml(s){ return (s+'').replace(/[&<>\"']/g, t=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[t])); }
+  const DICE = [4,6,8,10,12,20,100];
+  function randInt(min,max){ const range=max-min+1; const arr=new Uint32Array(1); const maxUint=0xFFFFFFFF; const bucket=Math.floor(maxUint/range)*range; let r; do{ crypto.getRandomValues(arr); r=arr[0]; } while(r>=bucket); return min+(r%range); }
+  function rollDie(sides){ return randInt(1,sides); }
+  function rollNdX(n,x){ const rolls=[]; for(let i=0;i<n;i++) rolls.push(rollDie(x)); return { rolls, total: rolls.reduce((a,b)=>a+b,0) }; }
+  function parseExpression(expr){ const s=expr.replace(/\s+/g,'').toLowerCase(); if(!s) return { total:0, parts:[], detail:'' }; let i=0, sign=1, total=0; const parts=[]; function readNumber(){ let start=i; while(i<s.length && /[0-9]/.test(s[i])) i++; return parseInt(s.slice(start,i)||'0',10); } while(i<s.length){ if(s[i]==='+'){sign=1;i++;continue;} if(s[i]==='-'){sign=-1;i++;continue;} const num=readNumber(); if(s[i]==='d'){ i++; const sides=readNumber(); const n=(num||1); const {rolls,total:sub}=rollNdX(n,sides); const signed=sign*sub; total+=signed; parts.push({type:'dice',n,sides,rolls,subtotal:sub,signed}); } else { const signed=sign*(num||0); total+=signed; parts.push({type:'mod',value:num||0,signed}); } sign=1; } const detail=parts.map(p=> p.type==='dice' ? `${p.signed>=0?'+':''}${p.signed} [${p.n}d${p.sides}: ${p.rolls.join(', ')}]` : `${p.signed>=0?'+':''}${p.signed}`).join(' '); return { total, parts, detail }; }
+  const stateDice = { chars: [] };
+  function Character(data){ this.id=Math.random().toString(36).slice(2,9); this.name=data?.name||'Nuovo'; this.presets=data?.presets||[]; this.history=data?.history||[]; }
+  function renderDice(){ diceRoot.innerHTML=''; const grid=document.createElement('div'); grid.className='grid'; diceRoot.appendChild(grid); if(stateDice.chars.length===0){ const empty=document.createElement('div'); empty.className='col-12'; empty.innerHTML='<div class="panel2">Nessun personaggio. Clicca <b>+ Personaggio</b> per iniziare.</div>'; grid.appendChild(empty); } stateDice.chars.forEach(c=> grid.appendChild(renderChar(c))); }
+  function renderChar(char){ const wrap=document.createElement('section'); wrap.className='panel2 col-6'; wrap.innerHTML=`
+      <div class="row">
+        <input class="name-input" placeholder="Nome personaggio" aria-label="Nome personaggio" style="background:#2b0b13;border:1px solid rgba(210,170,90,.25);color:#ffeedd;border-radius:8px;padding:6px 8px;font-weight:800;font-size:15px;font-family:Cinzel,serif" />
+        <div style="margin-left:auto; display:flex; gap:6px">
+          <button class="btn" data-act="clear">Pulisci</button>
+          <button class="btn" data-act="delete">Elimina</button></div>
+      </div>
+      <div class="dicebar" style="margin-top:6px">
+        ${DICE.map(d=>`<div class="diebtn" tabindex="0" role="button" aria-label="Lancia d${d}" data-die="${d}">d${d}</div>`).join('')}
+      </div>
+      <div class="inputs">
+        <input type="number" min="1" step="1" value="1" aria-label="Quantità" placeholder="Quantità" data-field="qty" />
+        <select data-field="adv" aria-label="Vantaggio/Svantaggio">
+          <option value="none">Normale</option>
+          <option value="adv">Vantaggio (d20)</option>
+          <option value="dis">Svantaggio (d20)</option>
+        </select>
+        <input type="number" step="1" value="0" aria-label="Modificatore" placeholder="Mod + / - " data-field="mod" />
+        <input type="text" placeholder="Espressione (es. 2d6+1d4+3)" aria-label="Espressione" data-field="expr" />
+        <button class="btn" data-act="roll-expr">Lancia</button></div>
+      <div class="row" style="margin-top:8px; gap:8px">
+        <button class="btn" data-act="save-preset" title="Salva come preset">Salva Preset</button>
+        <span class="mini">Preset: <span data-presets>—</span></span></div>
+      <div class="history"></div>`;
+    const nameInput=wrap.querySelector('.name-input'); nameInput.value=char.name; nameInput.addEventListener('change', ()=>{ char.name=nameInput.value.trim()||'Personaggio'; });
+    wrap.querySelectorAll('.diebtn').forEach(btn=> btn.addEventListener('click',(e)=>{ const die=parseInt(btn.dataset.die,10); const qtyInput=wrap.querySelector('[data-field="qty"]'); const modInput=wrap.querySelector('[data-field="mod"]'); let qty=1; if(e.altKey){ const v=prompt(`Quanti d${die}?`, qtyInput.value||'1'); qty=Math.max(1, parseInt(v||'1',10)); } else { qty=Math.max(1, parseInt(qtyInput.value||'1',10)); } const mod=parseInt(modInput.value||'0',10); const expr=`${qty}d${die}${mod?(mod>0?`+${mod}`:mod):''}`; rollDice({char,label:expr,expression:expr,wrap}); }));
+    wrap.querySelector('[data-act="roll-expr"]').addEventListener('click', ()=>{ const expr=wrap.querySelector('[data-field="expr"]').value.trim(); if(!expr) return; rollDice({char,label:expr,expression:expr,wrap}); });
+    const presetsHolder=wrap.querySelector('[data-presets]'); function refreshPresets(){ presetsHolder.innerHTML=''; if(!char.presets.length) presetsHolder.textContent='—'; else char.presets.forEach(p=>{ const a=document.createElement('a'); a.href='#'; a.textContent=p; a.style.color='#f2c66b'; a.style.marginRight='8px'; a.addEventListener('click',(e)=>{ e.preventDefault(); rollDice({char,label:p,expression:p,wrap}); }); presetsHolder.appendChild(a); }); }
+    wrap.querySelector('[data-act="save-preset"]').addEventListener('click', ()=>{ const expr=wrap.querySelector('[data-field="expr"]').value.trim(); if(!expr) return alert('Nessuna espressione da salvare.'); if(!char.presets.includes(expr)) char.presets.push(expr); refreshPresets(); });
+    wrap.querySelector('[data-act="clear"]').addEventListener('click', ()=>{ if(!confirm('Svuotare la cronologia di questo personaggio?')) return; char.history=[]; refreshHistory(); });
+    wrap.querySelector('[data-act="delete"]').addEventListener('click', ()=>{ if(!confirm(`Eliminare ${char.name}?`)) return; stateDice.chars=stateDice.chars.filter(x=>x!==char); renderDice(); });
+    function refreshHistory(){ const h=wrap.querySelector('.history'); h.innerHTML=''; if(!char.history.length){ h.innerHTML='<span class="mini">Nessun lancio ancora.</span>'; return; } char.history.slice().reverse().forEach(item=>{ const line=document.createElement('div'); line.className='line'; line.innerHTML = `<div><div><b>${escapeHtml(item.label)}</b>${item.adv && item.adv!=="none" ? ` <span class="mini">(${item.adv==='adv'?'vantaggio':'svantaggio'})</span>` : ''}</div><div class="mini">${new Date(item.ts).toLocaleString()}</div><div class="mini">${escapeHtml(item.breakdown)}</div></div><div class="sum">${item.total}</div>`; h.appendChild(line); }); }
+    function rollDice({char,label,expression,wrap}){ const advSel=wrap.querySelector('[data-field="adv"]').value; let breakdown='',total=0; const singleD20Regex=/^\\s*(\\d*)d(20)\\s*([+\\-].+)?$/i; if((advSel==='adv'||advSel==='dis') && singleD20Regex.test(expression)){ const m=expression.replace(/\\s+/g,'').match(singleD20Regex); const n=parseInt(m[1]||'1',10); const mods=m[3]||''; const results=[]; const pairs=[]; for(let i=0;i<n;i++){ const a=randInt(1,20), b=randInt(1,20); const pick=advSel==='adv'?Math.max(a,b):Math.min(a,b); results.push(pick); pairs.push([a,b,pick]); } const base=results.reduce((a,b)=>a+b,0); let modVal=0, modBreak=''; if(mods){ const parsed=parseExpression(mods.replace(/^\\+/,'').trim()); modVal=parsed.total; modBreak=parsed.detail; } total=base+modVal; const pairText=pairs.map((p,i)=>`#${i+1}(${p[0]}, ${p[1]} → ${p[2]})`).join(', '); breakdown=`${n}d20${mods} ⇒ [${pairText}]${modBreak? ' '+modBreak:''}`.trim(); } else { const parsed=parseExpression(expression); total=parsed.total; breakdown=parsed.detail; } const item={ts:Date.now(),label,breakdown,total,adv:advSel}; char.history.push(item); if(char.history.length>500) char.history=char.history.slice(-500); refreshHistory(); }
+    refreshPresets(); refreshHistory(); return wrap;
+  }
+  document.getElementById('diceAddChar').addEventListener('click', ()=>{ stateDice.chars.push(new Character({})); renderDice(); });
+  renderDice();
+
+  // TOOLS (initiative + states + log + timer + notes)
+  const $=(s)=>document.querySelector(s);
+  const t_name=$('#t_name'), t_init=$('#t_init'), t_mod=$('#t_mod'), t_hp=$('#t_hp'), t_ac=$('#t_ac'), t_ispc=$('#t_ispc');
+  const t_add=$('#t_add'), t_sort=$('#t_sort'), t_start=$('#t_start'), t_end=$('#t_end'), t_clear=$('#t_clear'), t_next=$('#t_next'), t_prev=$('#t_prev');
+  const t_list=$('#t_list'), t_turn=$('#t_turn'), t_round=$('#t_round'), t_log=$('#t_log');
+  const mins=$('#mins'), secs=$('#secs'), tstart=$('#tstart'), tpause=$('#tpause'), treset=$('#treset'), tleft=$('#tleft');
+  const notes=$('#notes');
+  const STORAGE='mdgdr_tools_v5';
+  let tools = loadTools() || { list:[], activeIndex:-1, round:0, notes:'', timer:{ms:60000,running:false}, log:[] };
+  function saveTools(){ localStorage.setItem(STORAGE, JSON.stringify(tools)); }
+  function loadTools(){ try{ return JSON.parse(localStorage.getItem(STORAGE)); }catch(e){ return null; } }
+  function logEvent(msg){ tools.log.push({ts:Date.now(), msg}); if(tools.log.length>500) tools.log = tools.log.slice(-500); renderLog(); saveTools(); }
+  function renderTools(){
+    t_list.innerHTML='';
+    tools.list.forEach((c,idx)=>{
+      const row=document.createElement('div'); row.className='rowItem'; row.innerHTML=`
+        <span class="dot" style="width:9px;height:9px;border-radius:50%;background:${c.ispc?'#6bbf7a':'#d65a5a'}"></span>
+        <div><b class="name">${esc(c.name)}</b> <span class="statuses" style="color:#e8cfcf"></span></div>
+        <div>Init: <b>${c.init}</b> <span class="mini">(${c.mod>=0?'+':''}${c.mod||0})</span></div>
+        <div>HP: <a href="#" data-edit="hp">${c.hp??'—'}</a></div>
+        <div>CA: <a href="#" data-edit="ac">${c.ac??'—'}</a></div>
+        <div style="text-align:right"><button class="btn" data-act="state">+ Stato</button> <button class="btn" data-act="del">✕</button></div>`;
+      row.addEventListener('dblclick', ()=>{ const nv=prompt('Nuovo nome:', c.name); if(nv){ c.name=nv.slice(0,30); logEvent(`Rinominato in "${nv}"`); changedTools(); } });
+      row.querySelectorAll('[data-edit]').forEach(a=> a.addEventListener('click',(e)=>{ e.preventDefault(); const field=a.dataset.edit; const v=prompt(`Nuovo ${field.toUpperCase()}:`, c[field]??''); if(v!==null){ const n=parseInt(v,10); c[field]=isNaN(n)?null:n; logEvent(`${field.toUpperCase()} di ${c.name} → ${c[field]??'—'}`); changedTools(); }}));
+      row.querySelector('[data-act="del"]').addEventListener('click',()=>{ if(!confirm('Rimuovere '+c.name+'?')) return; tools.list.splice(idx,1); logEvent(`Rimosso ${c.name}`); if(tools.activeIndex>=tools.list.length) tools.activeIndex=tools.list.length-1; changedTools(); });
+      row.querySelector('[data-act="state"]').addEventListener('click',()=>{ pickState(c); });
+      if(tools.activeIndex===idx){ const b=document.createElement('span'); b.className='badge'; b.textContent='Attivo'; b.style.marginLeft='8px'; row.children[1].appendChild(b); }
+      const stWrap=row.querySelector('.statuses'); stWrap.innerHTML=(c.statuses||[]).map(s=>`<span class="badge" title="Clic per rimuovere" data-rm="${s.id}" style="margin-left:6px;border-color:rgba(210,170,90,.25);background:#2b0b13">${esc(s.label)}</span>`).join('');
+      row.querySelectorAll('[data-rm]').forEach(b=> b.addEventListener('click', ()=>{ const id=b.getAttribute('data-rm'); c.statuses=(c.statuses||[]).filter(x=>x.id!==id); logEvent(`Stato rimosso da ${c.name}: ${b.textContent}`); changedTools(); }));
+      t_list.appendChild(row);
+    });
+    t_turn.textContent = tools.activeIndex>=0? (tools.activeIndex+1) : '—';
+    t_round.textContent = tools.round>0? tools.round : '—';
+    const mm=Math.max(0,Math.floor(tools.timer.ms/60000)); const ss=Math.max(0,Math.floor((tools.timer.ms%60000)/1000));
+    mins.value=mm; secs.value=ss; tleft.textContent=`${String(mm).padStart(2,'0')}:${String(ss).padStart(2,'0')}`;
+    notes.value=tools.notes||'';
+    renderLog(); saveTools();
+  }
+  function pickState(c){ const suggestions='Prono, Afferrato, Accecato, Avvelenato, Incosciente, Paralizzato, Invisibile, Sordo, Spaventato, Rallentato, Resistente, Vulnerabile, Concentrato'; const inp=prompt(`Aggiungi stati (separa con virgola)\\nSuggerimenti: ${suggestions}`, 'Concentrato'); if(!inp) return; const parts=inp.split(',').map(s=>s.trim()).filter(Boolean); c.statuses=c.statuses||[]; for(const label of parts){ const id=label.toLowerCase(); if(c.statuses.find(x=>x.id===id)) continue; c.statuses.push({id,label}); logEvent(`Stato aggiunto a ${c.name}: ${label}`); } changedTools(); }
+  function sortByInit(){ tools.list.sort((a,b)=> b.init - a.init || (b.mod||0) - (a.mod||0) || a.name.localeCompare(b.name) ); }
+  function changedTools(){ renderTools(); }
+  t_add.addEventListener('click', ()=>{ const c={ id:Math.random().toString(36).slice(2,9), name:(t_name.value||'Creatura'), init:parseInt(t_init.value||'0',10)||0, mod:parseInt(t_mod.value||'0',10)||0, hp: valOrNull(t_hp.value), ac: valOrNull(t_ac.value), ispc: !!t_ispc.checked, statuses:[] }; tools.list.push(c); sortByInit(); if(tools.activeIndex<0) tools.activeIndex=0; logEvent(`Aggiunto ${c.name} (Init ${c.init}${c.mod? (c.mod>=0?'+':'')+c.mod : ''})`); changedTools(); });
+  function valOrNull(v){ if(v===''||v==null) return null; const n=parseInt(v,10); return isNaN(n)?null:n; }
+  t_sort.addEventListener('click', ()=>{ sortByInit(); logEvent('Elenco ordinato per iniziativa'); changedTools(); });
+  t_start.addEventListener('click', ()=>{ if(tools.list.length===0) return; sortByInit(); tools.activeIndex=0; tools.round=1; logEvent('Combattimento avviato'); changedTools(); });
+  t_end.addEventListener('click', ()=>{ logEvent('Combattimento terminato'); tools.activeIndex=-1; tools.round=0; changedTools(); });
+  t_clear.addEventListener('click', ()=>{ if(!confirm('Svuotare elenco e registro?')) return; tools.list=[]; tools.activeIndex=-1; tools.round=0; tools.log=[]; changedTools(); });
+  t_next.addEventListener('click', ()=>{ if(tools.list.length===0) return; tools.activeIndex=(tools.activeIndex+1)%tools.list.length; if(tools.activeIndex===0){ tools.round++; logEvent('Nuovo round: '+tools.round); } else { logEvent('Turno a: '+tools.list[tools.activeIndex].name); } changedTools(); });
+  t_prev.addEventListener('click', ()=>{ if(tools.list.length===0) return; tools.activeIndex=(tools.activeIndex-1+tools.list.length)%tools.list.length; logEvent('Turno a: '+tools.list[tools.activeIndex].name); changedTools(); });
+  // Timer
+  let lastTick=0; function setTimer(ms){ tools.timer.ms=Math.max(0,ms); }
+  function tick(ts){ if(!tools.timer.running){ lastTick=ts; return; } if(!lastTick) lastTick=ts; const dt=ts-lastTick; lastTick=ts; setTimer(tools.timer.ms - dt); if(tools.timer.ms<=0){ tools.timer.ms=0; tools.timer.running=false; alert('Tempo scaduto!'); } renderTools(); requestAnimationFrame(tick); }
+  tstart.addEventListener('click', ()=>{ const mm=parseInt(mins.value||'0',10); const ss=parseInt(secs.value||'0',10); if(!tools.timer.running && tools.timer.ms===0){ setTimer((mm*60+ss)*1000); } tools.timer.running=true; requestAnimationFrame(tick); changedTools(); });
+  tpause.addEventListener('click', ()=>{ tools.timer.running=false; changedTools(); });
+  treset.addEventListener('click', ()=>{ tools.timer.running=false; setTimer((parseInt(mins.value||'0',10)*60 + parseInt(secs.value||'0',10))*1000); changedTools(); });
+  // Notes
+  notes.addEventListener('input', ()=>{ tools.notes=notes.value; saveTools(); });
+
+  function renderLog(){ t_log.innerHTML = tools.log.slice(-200).map(e=>`<div class="mini" style="padding:3px 0;border-bottom:1px dashed rgba(210,170,90,.25)"><b>[${new Date(e.ts).toLocaleTimeString()}]</b> ${esc(e.msg)}</div>`).join(''); t_log.scrollTop = t_log.scrollHeight; }
+  function esc(str){ return (str+"").replace(/[&<>\"']/g, s=>({"&":"&amp;","<":"&lt;","&gt;":"&gt;","\"":"&quot;","'":"&#39;"}[s])); }
+
+  // Global backup (map + tools + dice)
+  const saveAll=document.getElementById('saveAll'); const loadAll=document.getElementById('loadAll');
+  saveAll.addEventListener('click', ()=>{
+    const data = JSON.stringify({ map: state, tools, dice: stateDice }, null, 2);
+    const blob = new Blob([data], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='gdr-tools-backup.json'; a.click(); URL.revokeObjectURL(url);
+  });
+  loadAll.addEventListener('change', (e)=>{
+    const file=e.target.files && e.target.files[0]; if(!file) return;
+    const reader=new FileReader();
+    reader.onload=()=>{
+      try{
+        const obj=JSON.parse(reader.result);
+        if(obj.map){ state=Object.assign(state,obj.map); cellSizeInput.value=state.cellSize; cellSizeVal.textContent=`${state.cellSize} px`; showGridChk.checked=state.showGrid; snapMoveChk.checked=state.snapMove; noOverlapChk.checked=state.noOverlap; mapFitSel.value=state.mapFit||'cover'; renderTokenBadges(); if(state.mapDataUrl){ const img=new Image(); img.onload=()=>{ bgImage={img,w:img.naturalWidth,h:img.naturalHeight}; draw(); }; img.src=state.mapDataUrl; } else { bgImage=null; draw(); } }
+        if(obj.tools){ tools=Object.assign(tools,obj.tools); renderTools(); }
+        if(obj.dice){ stateDice.chars = (obj.dice.chars||[]).map(c=>Object.assign(new Character({}), c)); renderDice(); }
+        alert('Backup caricato ✅');
+      }catch(err){ alert('Errore nel JSON: '+err.message); }
+    };
+    reader.readAsText(file);
+  });
+
+})(); 
+</script>
+<script src="/socket.io/socket.io.js"></script>
+
+<script>
+// PWA service worker registration (Netlify/HTTPS required)
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/service-worker.js').catch(console.error);
+  });
+}
+</script>
+
+</body>
+</html>
